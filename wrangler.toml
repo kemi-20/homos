@@ -1,6 +1,16 @@
 name = "homos"
 compatibility_date = "2026-06-12"
+main = "./src/worker.ts"
+
+[ai]
+binding = "AI"
+
+[[kv_namespaces]]
+binding = "QUOTE_KV"
+id = "40ce73f4ca524921a6c11da893f1585f"
 
 [assets]
 directory = "./dist"
+binding = "ASSETS"
 not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
