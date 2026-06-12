@@ -1,0 +1,135 @@
+---
+const quotes = [
+	{
+		text: "强者从不抱怨环境，强者只会在评论区留下自己的坐标。",
+		source: "今日气势",
+	},
+	{
+		text: "所谓抽象，不是看不懂，而是懂了以后开始怀疑自己。",
+		source: "抽象学导论",
+	},
+	{
+		text: "你说得对，但是先让我复读三遍。",
+		source: "复读机公约",
+	},
+	{
+		text: "互联网上最短的距离，是从认真讨论到全员开演。",
+		source: "群聊观察",
+	},
+	{
+		text: "不要问梗从哪里来，梗会自己找到回家的路。",
+		source: "迷因地理",
+	},
+	{
+		text: "今日无事发生，除了我们又把普通的一天过成了名场面。",
+		source: "日常档案",
+	},
+	{
+		text: "有些话不需要解释，懂的人已经在屏幕前笑出声了。",
+		source: "默契样本",
+	},
+	{
+		text: "文化不是被保存的标本，而是每天被大家重新玩坏一次。",
+		source: "HOMOS 札记",
+	},
+];
+---
+
+<section class="home-hero card-base p-5 md:p-7 mb-4 overflow-hidden relative">
+	<div class="absolute inset-0 pointer-events-none opacity-80">
+		<div class="home-hero-grid"></div>
+	</div>
+	<div class="relative z-10 grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
+		<div class="flex flex-col justify-between min-h-[19rem]">
+			<div>
+				<div class="inline-flex items-center gap-2 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] px-3 py-1 text-sm font-bold text-75">
+					<span class="h-2 w-2 rounded-full bg-[var(--primary)]"></span>
+					HOMOS Daily
+				</div>
+				<h1 class="mt-5 text-4xl md:text-5xl font-black text-90 leading-tight">
+					每日一言，今日开演。
+				</h1>
+				<p class="mt-4 max-w-2xl text-base md:text-lg text-75 leading-8">
+					这里收藏 homo 文化里的会心一笑、复读名句、抽象观察和互联网小型名场面。每天刷新一句，随时补充新的精神弹药。
+				</p>
+			</div>
+			<div class="mt-6 grid gap-3 sm:grid-cols-3">
+				<div class="homo-stat">
+					<div class="text-2xl font-black text-90">{quotes.length}</div>
+					<div class="text-sm text-50">句语料池</div>
+				</div>
+				<div class="homo-stat">
+					<div class="text-2xl font-black text-90">24h</div>
+					<div class="text-sm text-50">每日轮换</div>
+				</div>
+				<div class="homo-stat">
+					<div class="text-2xl font-black text-90">∞</div>
+					<div class="text-sm text-50">抽象浓度</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="quote-panel rounded-lg border border-black/10 dark:border-white/10 bg-white/70 dark:bg-black/20 p-5 md:p-6 backdrop-blur">
+			<div class="flex items-center justify-between gap-3">
+				<div>
+					<div class="text-sm font-bold text-50">今日一言</div>
+					<div id="daily-date" class="text-xs text-30 mt-1"></div>
+				</div>
+				<button
+					id="quote-reroll"
+					type="button"
+					class="btn-regular rounded-lg h-10 px-4 font-bold active:scale-95"
+				>
+					换一句
+				</button>
+			</div>
+			<blockquote class="mt-6">
+				<p id="daily-quote" class="text-2xl md:text-3xl font-black leading-snug text-90">
+					{quotes[0].text}
+				</p>
+				<footer id="daily-source" class="mt-5 text-sm text-50">- {quotes[0].source}</footer>
+			</blockquote>
+		</div>
+	</div>
+</section>
+
+<script is:inline id="daily-homo-data" type="application/json" set:html={JSON.stringify(quotes)}></script>
+
+<script is:inline>
+	const dailyHomoData = document.getElementById("daily-homo-data");
+	const quotes = dailyHomoData ? JSON.parse(dailyHomoData.textContent || "[]") : [];
+	const quoteText = document.getElementById("daily-quote");
+	const quoteSource = document.getElementById("daily-source");
+	const quoteDate = document.getElementById("daily-date");
+	const rerollButton = document.getElementById("quote-reroll");
+
+	function dayIndex(date) {
+		const start = new Date(date.getFullYear(), 0, 0);
+		const diff = date - start + (start.getTimezoneOffset() - date.getTimezoneOffset()) * 60000;
+		return Math.floor(diff / 86400000);
+	}
+
+	function renderQuote(index) {
+		if (!quotes.length || !quoteText || !quoteSource) return;
+		const quote = quotes[index % quotes.length];
+		quoteText.textContent = quote.text;
+		quoteSource.textContent = `- ${quote.source}`;
+	}
+
+	const today = new Date();
+	let currentIndex = quotes.length ? dayIndex(today) % quotes.length : 0;
+	if (quoteDate) {
+		quoteDate.textContent = today.toLocaleDateString("zh-CN", {
+			year: "numeric",
+			month: "long",
+			day: "numeric",
+			weekday: "long",
+		});
+	}
+	renderQuote(currentIndex);
+
+	rerollButton?.addEventListener("click", () => {
+		currentIndex = (currentIndex + 1) % quotes.length;
+		renderQuote(currentIndex);
+	});
+</script>

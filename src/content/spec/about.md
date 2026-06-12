@@ -1,9 +1,17 @@
-# About
-This is the demo site for [Fuwari](https://github.com/saicaca/fuwari).
+# 关于 HOMOS
 
-::github{repo="saicaca/fuwari"}
+HOMOS 是一个偏轻量的 homo 文化记录站：收集每日一言、抽象语录、群聊切片、复读名句和一些互联网语境里的小型名场面。
 
-> ### Sources of images used in this site
-> - [Unsplash](https://unsplash.com/)
-> - [星と少女](https://www.pixiv.net/artworks/108916539) by [Stella](https://www.pixiv.net/users/93273965)
-> - [Rabbit - v1.4 Showcase](https://civitai.com/posts/586908) by [Rabbit_YourMajesty](https://civitai.com/user/Rabbit_YourMajesty)
+本站基于 [Fuwari](https://github.com/saicaca/fuwari) 改造，部署在 Cloudflare Workers 上。
+
+::github{repo="kemi-20/homos"}
+
+## 这里会有什么
+
+- 每日一言：每天固定刷新一句，也可以手动换一句。
+- 文化索引：把梗、语气、场景和用法整理成短文。
+- 档案记录：保留那些一看就懂、越看越想笑的互联网瞬间。
+
+## 投稿方向
+
+适合收录的内容最好短、准、有画面感。它可以是一个句式、一段复读、一种语气，也可以是一种大家心照不宣的互动方式。

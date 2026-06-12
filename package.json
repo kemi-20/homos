@@ -1,5 +1,5 @@
 {
-  "name": "fuwari",
+  "name": "homos",
   "type": "module",
   "version": "0.0.1",
   "scripts": {
@@ -8,6 +8,7 @@
     "check": "astro check",
     "build": "astro build && pagefind --site dist",
     "preview": "astro preview",
+    "deploy": "pnpm build && wrangler deploy",
     "astro": "astro",
     "type-check": "tsc --noEmit --isolatedDeclarations",
     "new-post": "node scripts/new-post.js",
