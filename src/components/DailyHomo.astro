@@ -99,8 +99,10 @@ import { homoQuotes as quotes } from "../data/homo-quotes";
 			if (!response.ok) return;
 			const payload = await response.json();
 			renderDailyQuote(payload.quote);
+			return true;
 		} catch {
 			// Keep the local deterministic quote when Workers AI is unavailable.
+			return false;
 		}
 	}
 
@@ -117,9 +119,14 @@ import { homoQuotes as quotes } from "../data/homo-quotes";
 	renderQuote(currentIndex);
 	loadAiQuote();
 
-	rerollButton?.addEventListener("click", () => {
-		currentIndex = (currentIndex + 1) % quotes.length;
-		renderQuote(currentIndex);
-		loadAiQuote("reroll");
+	rerollButton?.addEventListener("click", async () => {
+		if (!rerollButton || rerollButton.disabled) return;
+		rerollButton.disabled = true;
+		const loaded = await loadAiQuote("reroll");
+		if (!loaded) {
+			currentIndex = (currentIndex + 1) % quotes.length;
+			renderQuote(currentIndex);
+		}
+		rerollButton.disabled = false;
 	});
 </script>
