@@ -42,6 +42,30 @@ type DailyQuote = {
 const MODEL = "@cf/ibm-granite/granite-4.0-h-micro";
 const DAILY_QUOTE_COUNT = 10;
 const HISTORY_QUOTE_COUNT = 100;
+const HOMO_ELEMENTS = [
+	"114514",
+	"1919810",
+	"810",
+	"野兽",
+	"野獣",
+	"先辈",
+	"先輩",
+	"迫真",
+	"下北泽",
+	"下北沢",
+	"红茶",
+	"昏睡",
+	"要素",
+	"こ↑こ↓",
+	"いいゾ",
+	"いいよ",
+	"やったぜ",
+	"ありがとナス",
+	"おっ、そうだな",
+	"見とけよ",
+	"多少はね",
+	"入って、どうぞ",
+] as const;
 
 function getUtcDateKey(date = new Date()) {
 	return date.toISOString().slice(0, 10);
@@ -76,6 +100,22 @@ function localQuotePool(date = new Date()): DailyQuote[] {
 		model: "local-preset",
 		date: dateKey,
 	}));
+}
+
+function homoElementScore(text: string) {
+	return HOMO_ELEMENTS.reduce(
+		(score, element) => (text.includes(element) ? score + 1 : score),
+		0,
+	);
+}
+
+function hasHomoElement(text: string) {
+	return homoElementScore(text) >= 1;
+}
+
+function richLocalQuotePool(date = new Date()) {
+	const rich = localQuotePool(date).filter((quote) => hasHomoElement(quote.text));
+	return rich.length ? rich : localQuotePool(date);
 }
 
 function extractText(result: unknown) {
@@ -113,11 +153,15 @@ function cleanQuote(text: string) {
 
 function parseGeneratedLines(text: string) {
 	return text
-		.split(/\r?\n/)
+		.replace(/```(?:json)?|```/g, "")
+		.split(/\r?\n|(?<=[。！？!?])\s+/)
 		.map((line) =>
 			cleanQuote(line.replace(/^\s*(?:[-*]|\d+[.)、：:]?)\s*/, "")),
 		)
-		.filter((line) => line.length >= 6 && line.length <= 80);
+		.filter(
+			(line) =>
+				line.length >= 8 && line.length <= 70 && homoElementScore(line) >= 2,
+		);
 }
 
 function uniqueByText(quotes: DailyQuote[]) {
@@ -156,12 +200,13 @@ async function generateDailyQuotes(env: Env, date = new Date()) {
 		messages: [
 			{
 				role: "system",
-				content: "你是 HOMOS 网站的每日一言生成器。严格按要求输出，不解释。",
+				content:
+					"你是 HOMOS 网站的每日一言生成器，只写中文互联网 INM / homo 文化梗句。严格按要求输出，不解释。",
 			},
 			{
 				role: "user",
 				content:
-					"生成 10 句中文互联网 homo / INM 风格的每日一言。要求：每句 20 到 40 个字；可以包含 114514、810、迫真、要素过多、Q.E.D. 等语境；不要露骨色情内容；不要仇恨、骚扰或人身攻击；每行一句；不要编号；不要标题。",
+					"生成 10 句中文互联网 homo / INM 风格的每日一言。硬性要求：每句 16 到 36 个字；每句至少包含两个要素词，要素词可从 114514、1919810、810、野兽先辈、迫真、下北沢、昏睡红茶、要素过多、こ↑こ↓、いいゾ、やったぜ、ありがとナス、多少はね、入ってどうぞ 中选择；要像群友会心一笑的短句，不要写成诗，不要解释。禁止露骨色情、仇恨、骚扰和人身攻击。每行一句，不要编号，不要标题。",
 			},
 		],
 	});
@@ -177,7 +222,7 @@ async function generateDailyQuotes(env: Env, date = new Date()) {
 		})),
 	);
 
-	const fallbackPool = localQuotePool(date);
+	const fallbackPool = richLocalQuotePool(date);
 	while (generated.length < DAILY_QUOTE_COUNT) {
 		const fallback =
 			fallbackPool[(dayIndex(date) + generated.length) % fallbackPool.length];
@@ -227,7 +272,7 @@ async function handleDailyQuote(request: Request, env: Env) {
 		const history = await getJson<DailyQuote[]>(env.QUOTE_KV, "history", []);
 		const pool =
 			mode === "reroll"
-				? uniqueByText([...history, ...localQuotePool()])
+				? uniqueByText([...history, ...richLocalQuotePool()])
 				: todayQuotes;
 
 		return jsonResponse({
