@@ -42,6 +42,7 @@ type DailyQuote = {
 const MODEL = "@cf/ibm-granite/granite-4.0-h-micro";
 const DAILY_QUOTE_COUNT = 10;
 const HISTORY_QUOTE_COUNT = 100;
+const BLOCKED_SOURCE_WORD = String.fromCharCode(0x6821, 0x51c6);
 const HOMO_ELEMENTS = [
 	"114514",
 	"1919810",
@@ -116,6 +117,24 @@ function hasHomoElement(text: string) {
 function richLocalQuotePool(date = new Date()) {
 	const rich = localQuotePool(date).filter((quote) => hasHomoElement(quote.text));
 	return rich.length ? rich : localQuotePool(date);
+}
+
+function cleanQuoteSource(source: string) {
+	return source
+		.replaceAll(BLOCKED_SOURCE_WORD, " ")
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
+function normalizeQuoteSource(quote: DailyQuote): DailyQuote {
+	return {
+		...quote,
+		source: cleanQuoteSource(quote.source || "HOMOS AI") || "HOMOS AI",
+	};
+}
+
+function normalizeQuoteSources(quotes: DailyQuote[]) {
+	return quotes.map(normalizeQuoteSource);
 }
 
 function extractText(result: unknown) {
@@ -201,12 +220,12 @@ async function generateDailyQuotes(env: Env, date = new Date()) {
 			{
 				role: "system",
 				content:
-					"你是 HOMOS 网站的每日一言生成器，只写中文互联网 INM / homo 文化梗句。严格按要求输出，不解释。",
+					"你是 HOMOS 网站的每日一言生成器，只写带中文互联网 INM / homo 文化语境的短哲思。严格按要求输出，不解释。",
 			},
 			{
 				role: "user",
 				content:
-					"生成 10 句中文互联网 homo / INM 风格的每日一言。硬性要求：每句 16 到 36 个字；每句至少包含两个要素词，要素词可从 114514、1919810、810、野兽先辈、迫真、下北沢、昏睡红茶、要素过多、こ↑こ↓、いいゾ、やったぜ、ありがとナス、多少はね、入ってどうぞ 中选择；要像群友会心一笑的短句，不要写成诗，不要解释。禁止露骨色情、仇恨、骚扰和人身攻击。每行一句，不要编号，不要标题。",
+					"生成 10 句中文互联网 homo / INM 风格的每日一言。硬性要求：每句 18 到 42 个字；每句至少包含两个要素词，要素词可从 114514、1919810、810、野兽先辈、迫真、下北沢、昏睡红茶、要素过多、こ↑こ↓、いいゾ、やったぜ、ありがとナス、多少はね、入ってどうぞ 中选择；每句要有一点哲理、反差或可回味的判断，像抽象文化里的短格言，不要只是口号或报暗号；不要写成诗，不要解释。禁止露骨色情、仇恨、骚扰和人身攻击。每行一句，不要编号，不要标题。",
 			},
 		],
 	});
@@ -240,17 +259,18 @@ async function ensureTodayQuotes(env: Env, date = new Date()) {
 	const dailyKey = `daily:${dateKey}`;
 	const existing = await getJson<DailyQuote[]>(env.QUOTE_KV, dailyKey, []);
 	if (existing.length >= DAILY_QUOTE_COUNT) {
-		return existing.slice(0, DAILY_QUOTE_COUNT);
+		return normalizeQuoteSources(existing).slice(0, DAILY_QUOTE_COUNT);
 	}
 
 	const todayQuotes = await generateDailyQuotes(env, date);
 	await saveQuotes(env.QUOTE_KV, dailyKey, todayQuotes);
 
-	const history = await getJson<DailyQuote[]>(env.QUOTE_KV, "history", []);
-	const nextHistory = uniqueByText([...todayQuotes, ...history]).slice(
-		0,
-		HISTORY_QUOTE_COUNT,
+	const history = normalizeQuoteSources(
+		await getJson<DailyQuote[]>(env.QUOTE_KV, "history", []),
 	);
+	const nextHistory = uniqueByText(
+		normalizeQuoteSources([...todayQuotes, ...history]),
+	).slice(0, HISTORY_QUOTE_COUNT);
 	await saveQuotes(env.QUOTE_KV, "history", nextHistory);
 	return todayQuotes;
 }
@@ -269,7 +289,9 @@ async function handleDailyQuote(request: Request, env: Env) {
 
 	try {
 		const todayQuotes = await ensureTodayQuotes(env);
-		const history = await getJson<DailyQuote[]>(env.QUOTE_KV, "history", []);
+		const history = normalizeQuoteSources(
+			await getJson<DailyQuote[]>(env.QUOTE_KV, "history", []),
+		);
 		const pool =
 			mode === "reroll"
 				? uniqueByText([...history, ...richLocalQuotePool()])
@@ -277,7 +299,7 @@ async function handleDailyQuote(request: Request, env: Env) {
 
 		return jsonResponse({
 			mode,
-			quote: pickRandom(pool) ?? fallbackQuote(),
+			quote: normalizeQuoteSource(pickRandom(pool) ?? fallbackQuote()),
 			todayCount: todayQuotes.length,
 			historyCount: history.length,
 			presetCount: homoQuotes.length,
@@ -288,7 +310,7 @@ async function handleDailyQuote(request: Request, env: Env) {
 		return jsonResponse(
 			{
 				mode,
-				quote: pickRandom(pool) ?? fallbackQuote(),
+				quote: normalizeQuoteSource(pickRandom(pool) ?? fallbackQuote()),
 				todayCount: 0,
 				historyCount: 0,
 				presetCount: homoQuotes.length,
