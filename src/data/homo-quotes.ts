@@ -230,4 +230,5 @@ export const homoQuotes: HomoQuote[] = [
 	{ text: "HOMOS 语料池、もう足りてるだろ。", source: "启动语录" },
 	{ text: "HOMOS 文化、多少はね。", source: "启动语录" },
 	{ text: "HOMOS 今日も、迫真。", source: "启动语录" },
+	{ text: "HOMOS 数え直し、ありがとナス。", source: "校对语录" },
 ];
